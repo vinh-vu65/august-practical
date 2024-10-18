@@ -1,0 +1,10 @@
+services:
+  app:
+    build: .
+    ports:
+      - "${HOST_PORT:-80}:${CONTAINER_PORT:-80}"
+    volumes:
+      - ./src:/var/www/html
+    environment:
+      HTTP_PORT: ${CONTAINER_PORT:-80}
+      PHP_ENV: ${PHP_ENV:-development}

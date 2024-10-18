@@ -103,3 +103,102 @@ Verify the value updates when provided a value at runtime:
 docker run -d -p 80:80 -e PHP_ENV=production <container>
 ```
 The `PHP_ENV` value on the index page should resolve to `production`.
+
+## Requirement 5: Custom entrypoint to install vendor dependencies via Composer
+
+**1. Install Composer in the container**
+
+The Composer docs provide a [handy resource](https://getcomposer.org/doc/00-intro.md#docker-image) for installing this tool on Docker containers
+
+For the same reason as not using the `latest` tag above, we'll pull the current latest version's binary, which is v2.8.1
+
+Add the following line to our Dockerfile to install Composer:
+```Dockerfile
+COPY --from=composer/composer:2.8.1-bin /composer /usr/bin/composer
+```
+
+**2. Create the custom entrypoint**
+
+**2a. Write the entrypoint script**
+
+```sh
+#!/usr/bin/env sh
+
+set -e
+
+# Install composer dependencies if composer.json exists
+if [ -f "composer.json" ]; then
+    echo "Installing Composer dependencies..."
+    composer install --no-interaction
+fi
+
+# Start the PHP built-in web server
+php -S 0.0.0.0:$HTTP_PORT
+```
+
+Let's break it down.
+
+The shebang: `#!/usr/bin/env sh` points to the base shell in the user's environment.
+This type of shebang is more portable because it does not hard code the path to the shell interpreter.
+We also use the base `sh` over `bash` because `alpine` does not come with `bash`.
+
+`set -e` is for error handling. This tells the script to exit if any command fails.
+We would rather fail early if `composer` encounters an error and the web-server starts anyway.
+That behaviour would make it difficult to debug why `composer` packages are not being loaded.
+
+```sh
+if [ -f "composer.json" ]; then
+    echo "Installing Composer dependencies..."
+    composer install --no-interaction
+fi
+```
+
+Looks for the presence of a `composer.json` file. If it exists then install the dependencies using the `install` command.
+`--no-interaction` will use the default value if user interaction is required.
+
+`php -S 0.0.0.0:$HTTP_PORT`: Then carry on with starting up the in-built webserver as before. The `$HTTP_PORT` environment variable should be passed into the script from the container.
+
+**2b. Ensure the script is executable**
+
+Run `chmod +x ./docker-entrypoint.sh`
+
+**2c. Update the entrypoint**
+
+```Dockerfile
+COPY ./docker-entrypoint.sh /usr/local/bin/docker-entrypoint
+
+ENTRYPOINT [ "docker-entrypoint" ]
+```
+
+**3. Verification**
+
+**3a. Create a `composer.json` file for testing**
+
+```json
+{
+    "require": {
+        "monolog/monolog": "^3.7"
+    }
+}
+```
+
+I have used version 3.7 as the original `v2.0.*` in the example given is not compatible with this latest version of php.
+
+**3b. Create a `test_monolog.php` file to test the dependencies are install on the container**
+
+**3c. Verify the package works**
+
+```sh
+# Build, then start the container
+docker run -d -p 80:80 <container>
+
+# Go to localhost:80/test_monolog.php on your browser
+# Check the container logs
+docker logs <container>
+
+> [2024-10-18T04:54:33.016079+00:00] test.INFO: Monolog is successfully installed and working! [] []
+> [Fri Oct 18 04:54:33 2024] 172.17.0.1:54360 [200]: GET /test_monolog.php
+> [Fri Oct 18 04:54:33 2024] 172.17.0.1:54360 Closing
+> [Fri Oct 18 04:54:33 2024] 172.17.0.1:54366 Accepted
+```
+Success!

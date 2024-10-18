@@ -12,7 +12,9 @@ COPY ./src /var/www/html
 
 WORKDIR /var/www/html
 
-ENV HTTP_PORT 80
+ENV PHP_ENV=development
+
+ENV HTTP_PORT=80
 EXPOSE ${HTTP_PORT}
 
 ENTRYPOINT php -S "0.0.0.0:${HTTP_PORT}"

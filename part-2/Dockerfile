@@ -8,4 +8,11 @@ RUN ( curl -sSLf https://github.com/mlocati/docker-php-extension-installer/relea
     mysqlnd \
     zip
 
-CMD ["php", "-m"]
+COPY ./src /var/www/html
+
+WORKDIR /var/www/html
+
+ENV HTTP_PORT 80
+EXPOSE ${HTTP_PORT}
+
+ENTRYPOINT php -S "0.0.0.0:${HTTP_PORT}"

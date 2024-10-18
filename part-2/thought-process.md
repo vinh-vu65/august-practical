@@ -77,3 +77,9 @@ docker run -d -p 80:80 <container_name>
 PORT=1234; docker run -d -p $PORT:$PORT -e HTTP_PORT=$PORT <container_name>
 ```
 > We should see "Hello World!" when we navigate to localhost:1234 on our browser
+
+## Requirement 3: Default index page displays phpinfo
+
+1. Update `index.php` to display `phpinfo()`
+
+Changes should be visible when re-building and re-running the container.

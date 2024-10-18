@@ -38,7 +38,7 @@ Shell into the container and verify that the modules have installed successfully
 
 ```sh
 # Output the php modules in the container
-$ docker run -it <container_name> sh -c "php -m"
+$ docker run -it <container> sh -c "php -m"
 ```
 
 On a clean install of php v8.3.12, some of the required modules are already included.
@@ -68,18 +68,38 @@ Run `php -S 0.0.0.0:${HTTP_PORT}` in the container to start up php with the inbu
 
 ```sh
 # Default port value
-docker run -d -p 80:80 <container_name>
+docker run -d -p 80:80 <container>
 ```
 > We should see "Hello World!" when we navigate to localhost:80 on our browser
 
 ```sh
 # Custom port value
-PORT=1234; docker run -d -p $PORT:$PORT -e HTTP_PORT=$PORT <container_name>
+PORT=1234; docker run -d -p $PORT:$PORT -e HTTP_PORT=$PORT <container>
 ```
 > We should see "Hello World!" when we navigate to localhost:1234 on our browser
 
 ## Requirement 3: Default index page displays phpinfo
 
-1. Update `index.php` to display `phpinfo()`
+**1. Update `index.php` to display `phpinfo()`**
 
 Changes should be visible when re-building and re-running the container.
+
+## Requirement 4: PHP_ENV environment variable
+
+**1. Add the environment variable to the Dockerfile.**
+
+```Dockerfile
+ENV PHP_ENV=development
+```
+
+**2. Verification**
+
+The phpinfo index page should display current environment variables.
+
+Verify that on default settings, `PHP_ENV` value is `development`.
+
+Verify the value updates when provided a value at runtime:
+```sh
+docker run -d -p 80:80 -e PHP_ENV=production <container>
+```
+The `PHP_ENV` value on the index page should resolve to `production`.

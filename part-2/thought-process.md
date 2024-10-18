@@ -202,3 +202,92 @@ docker logs <container>
 > [Fri Oct 18 04:54:33 2024] 172.17.0.1:54366 Accepted
 ```
 Success!
+
+## Requirement 6: Add Docker compose config and a MariaDB service
+
+**1. Convert the current Dockerfile to a `docker-compose` setup.
+
+```yaml
+# docker-compose.yaml
+services:
+  app:
+    build: .
+    ports:
+      - "${HOST_PORT:-80}:${CONTAINER_PORT:-80}"
+    environment:
+      HTTP_PORT: ${CONTAINER_PORT:-80}
+      PHP_ENV: ${PHP_ENV:-development}
+```
+
+In this configuration, we are taking advantage of docker-compose's ability to automatically read a `.env` file to set environment variables.
+If the environment variable is not present in the file, we have also provided a default value.
+
+```sh
+# .env
+HOST_PORT=3000
+CONTAINER_PORT=3000
+PHP_ENV=test
+```
+
+`build .`
+
+This line tells `docker-compose` to look for a `Dockerfile` in the current directory to build for this service.
+
+We can be more explicit if we want to if we had multiple Dockerfiles or if our file was placed in a different directory:
+```yaml
+    build:
+      context: .
+      dockerfile: Dockerfile
+```
+
+Let's test it and see if the app still works as before
+```sh
+# Create the docker-compose containers in detached mode
+docker-compose up -d
+
+# ✓ Hit localhost:3000 because we set the port in .env
+# ✓ PHP_ENV = test on the index phpinfo page
+# ✓ Hit localhost:3000/test_monolog.php, and monolog is verified with:
+docker-compose logs app
+```
+Nice one!
+
+Let's think about how developers will be using our container..
+At the moment, if they want to see any changes in their code, it requires a rebuild.
+
+Let's take advantage of volumes so that their changes can be reflected in the container
+
+**2. Use volumes**
+
+```yaml
+# docker-compose.yaml
+services:
+  app:
+    build: .
+    ports:
+      - "${HOST_PORT:-80}:${CONTAINER_PORT:-80}"
+    volumes:
+      - ./src:var/www/html
+    environment:
+      HTTP_PORT: ${CONTAINER_PORT:-80}
+      PHP_ENV: ${PHP_ENV:-development}
+```
+Here we are mounting our `src` files into the `/var/www/html` directory in the container. This is where the php webserver looks for files to serve.
+
+Now we'll restart our service:
+```sh
+docker-compose up -d
+```
+
+And now we can change our `index.php` code while the container is up. Refresh the browser and our changes should appear. Neat!
+
+**Note: Regarding dependency management**
+
+Let's say you accidentally deleted the `vendor` directory on your system, or you want to add more `composer` packages AND you don't have `composer` installed on your system.
+
+No problem, you can run `composer` commands in the container using `docker-composer exec`
+
+> Example Case: I want to also install symfony to my project
+```sh
+docker-compose exec app sh -c "composer require symfony/symfony"
+```

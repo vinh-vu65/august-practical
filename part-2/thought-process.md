@@ -351,7 +351,7 @@ services:
 
 > [!IMPORTANT]
 > Remember how we used named volumes to allow our data to persist even after we shutdown our container?
-
+>
 > The `/docker-entrypoint-initdb.d` will only run for a "new" container, so we'll need to clear the volume before we restart the service with `docker-compose down -v`
 
 ```sh

@@ -205,7 +205,7 @@ Success!
 
 ## Requirement 6: Add Docker compose config and a MariaDB service
 
-**1. Convert the current Dockerfile to a `docker-compose` setup.
+**1. Convert the current Dockerfile to a `docker-compose` setup.**
 
 ```yaml
 # docker-compose.yaml
@@ -331,3 +331,65 @@ We'll give the developer the flexibility to map to different ports if required.
 As we probably want the data to persist in our `db`, we can use a named volume, `db_data`, and mount this to the `/var/lib/mysql` directory in the container.
 
 We then need to define `db_data` as a `volume` at the root level of our `docker-compose`.
+
+**4. Verification**
+
+Let's test that our PHP app can successfully read data from our MariaDB service.
+
+1. Load some example data into the DB.
+
+From the MariaDB docker docs: We can mount `.sql` files into `/docker-entrypoint-initdb.d` and this can be used to seed some data into the DB.
+
+```yaml
+services:
+  db:
+    volumes:
+      - ./sql:/docker-entrypoint-initdb.d
+```
+
+2. Test the data loads correctly
+
+> [!IMPORTANT]
+> Remember how we used named volumes to allow our data to persist even after we shutdown our container?
+
+> The `/docker-entrypoint-initdb.d` will only run for a "new" container, so we'll need to clear the volume before we restart the service with `docker-compose down -v`
+
+```sh
+docker-compose up -d
+
+# Enter the mariadb command line on the container as the root user
+docker-compose exec db mariadb -u root -p
+
+# This should prompt you for the root password
+# Enter the value of $DB_ROOT_PASSWORD
+
+MariaDB [(none)]> use example_db
+Database changed
+MariaDB [example_db]> select * from test \g
++----+--------------+----------+------------+---------------------+---------------------+
+| id | propertyType | bedrooms | created_by | created_at          | updated_at          |
++----+--------------+----------+------------+---------------------+---------------------+
+|  1 | House        |        3 |          1 | 2024-10-19 10:28:36 | 2024-10-19 10:28:36 |
+|  2 | Apartment    |        2 |          2 | 2024-10-19 10:28:36 | 2024-10-19 10:28:36 |
+|  3 | Condo        |        1 |          3 | 2024-10-19 10:28:36 | 2024-10-19 10:28:36 |
+|  4 | Townhouse    |        4 |          4 | 2024-10-19 10:28:36 | 2024-10-19 10:28:36 |
+|  5 | Duplex       |        2 |          5 | 2024-10-19 10:28:36 | 2024-10-19 10:28:36 |
+|  6 | House        |        5 |          6 | 2024-10-19 10:28:36 | 2024-10-19 10:28:36 |
+|  7 | Apartment    |        1 |          7 | 2024-10-19 10:28:36 | 2024-10-19 10:28:36 |
+|  8 | Condo        |        3 |          8 | 2024-10-19 10:28:36 | 2024-10-19 10:28:36 |
+|  9 | Townhouse    |        4 |          9 | 2024-10-19 10:28:36 | 2024-10-19 10:28:36 |
+| 10 | Duplex       |        2 |         10 | 2024-10-19 10:28:36 | 2024-10-19 10:28:36 |
++----+--------------+----------+------------+---------------------+---------------------+
+10 rows in set (0.002 sec)
+
+# ✓ Initial data successfully loaded into the database
+```
+
+3. Now let's test that our PHP app can read the database
+
+Create a PHP script which reads the test data and displays it on our browser.
+(We had to install an additional PHP module to get the script to work: `pdo_mysql`)
+
+![test_db screenshot](img/test_db.png)
+
+Looks good!

@@ -6,7 +6,8 @@ RUN ( curl -sSLf https://github.com/mlocati/docker-php-extension-installer/relea
     intl \
     mbstring \
     mysqlnd \
-    zip
+    zip \
+    pdo_mysql
 
 COPY --from=composer/composer:2.8.1-bin /composer /usr/bin/composer
 COPY ./docker-entrypoint.sh /usr/local/bin/docker-entrypoint

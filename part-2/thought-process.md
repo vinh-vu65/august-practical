@@ -291,3 +291,43 @@ No problem, you can run `composer` commands in the container using `docker-compo
 ```sh
 docker-compose exec app sh -c "composer require symfony/symfony"
 ```
+
+**3. Add MariaDB service**
+
+Add another service to the `docker-compose.yaml`. As usual we'll resolve the current latest `mariadb` image (v11.5.2).
+
+```yaml
+services:
+  db:
+    image: mariadb:11.5.2
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MARIADB_DATABASE: ${DB_DATABASE}
+      MARIADB_USER: ${DB_USER}
+      MARIADB_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "${DB_HOST_PORT:-3306}:${DB_CONTAINER_PORT:-3306}"
+    volumes:
+      - db_data:/var/lib/mysql
+
+volumes:
+  db_data:
+```
+
+`environment`
+
+Here we set up the `mariadb` service, from the documentation on [dockerhub](https://hub.docker.com/_/mariadb), the minimum environment variable required is `MARIADB_ROOT_PASSWORD`.
+
+The other `MARIADB_*` environment variables are added for connecting our PHP app later.
+
+`ports`
+
+Port 3306 is the default MySQL port, and we will map on this port if the environment variables are not set.
+
+We'll give the developer the flexibility to map to different ports if required.
+
+`volumes`
+
+As we probably want the data to persist in our `db`, we can use a named volume, `db_data`, and mount this to the `/var/lib/mysql` directory in the container.
+
+We then need to define `db_data` as a `volume` at the root level of our `docker-compose`.

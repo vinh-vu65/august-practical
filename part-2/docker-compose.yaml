@@ -1,5 +1,7 @@
 services:
   app:
+    depends_on:
+      - db
     build: .
     ports:
       - "${HOST_PORT:-80}:${CONTAINER_PORT:-80}"
@@ -8,3 +10,22 @@ services:
     environment:
       HTTP_PORT: ${CONTAINER_PORT:-80}
       PHP_ENV: ${PHP_ENV:-development}
+      DB_HOST: db
+      DB_DATABASE: ${DB_DATABASE}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+
+  db:
+    image: mariadb:11.5.2
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MARIADB_DATABASE: ${DB_DATABASE}
+      MARIADB_USER: ${DB_USER}
+      MARIADB_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "${DB_HOST_PORT:-3306}:${DB_CONTAINER_PORT:-3306}"
+    volumes:
+      - db_data:/var/lib/mysql
+
+volumes:
+  db_data:

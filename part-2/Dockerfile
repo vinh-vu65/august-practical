@@ -10,7 +10,7 @@ RUN ( curl -sSLf https://github.com/mlocati/docker-php-extension-installer/relea
     pdo_mysql
 
 COPY --from=composer/composer:2.8.1-bin /composer /usr/bin/composer
-COPY ./docker-entrypoint.sh /usr/local/bin/docker-entrypoint
+COPY ./bin/docker-entrypoint.sh /usr/local/bin/docker-entrypoint
 
 COPY ./src /var/www/html
 
